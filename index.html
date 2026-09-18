@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Algo Viz</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>📊 Algo Viz</h1>
+    <p class="tagline">Watch classic algorithms think, one step at a time.</p>
+  </header>
+
+  <main>
+    <div id="stage-wrap">
+      <canvas id="stage" width="820" height="420"></canvas>
+    </div>
+
+    <aside id="panel">
+      <label class="field">
+        Algorithm
+        <select id="algo-select">
+          <option value="bubble">Bubble Sort</option>
+          <option value="selection">Selection Sort</option>
+          <option value="insertion">Insertion Sort</option>
+          <option value="merge">Merge Sort</option>
+          <option value="quick">Quick Sort</option>
+        </select>
+      </label>
+
+      <div class="controls">
+        <button id="btn-start">Start</button>
+        <button id="btn-shuffle">New Array</button>
+      </div>
+
+      <label class="field">
+        Speed
+        <input id="speed" type="range" min="1" max="10" value="5" step="1">
+      </label>
+
+      <div class="stat-row">
+        <span class="stat-label">Comparisons</span>
+        <span id="stat-compares" class="stat-value">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Swaps</span>
+        <span id="stat-swaps" class="stat-value">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Status</span>
+        <span id="stat-status" class="stat-value">Idle</span>
+      </div>
+
+      <div id="roadmap">
+        <h2>7-day build log</h2>
+        <ol id="roadmap-list"></ol>
+      </div>
+    </aside>
+  </main>
+
+  <script src="roadmap.js"></script>
+  <script src="algorithms.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
