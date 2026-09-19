@@ -10,6 +10,13 @@
   --bar-compare: #f0b429;
   --bar-swap: #f05252;
   --bar-sorted: #3fb950;
+  --cell-open: #101822;
+  --cell-wall: #1c2531;
+  --cell-frontier: #f0b429;
+  --cell-visited: #1f5c99;
+  --cell-path: #3fb950;
+  --cell-start: #58a6ff;
+  --cell-end: #f05252;
 }
 
 * { box-sizing: border-box; }
@@ -42,6 +49,32 @@ header h1 {
   font-size: 14px;
 }
 
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tab-btn {
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tab-btn:hover { color: var(--text); }
+
+.tab-btn.active {
+  background: var(--accent-dim);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.hidden { display: none !important; }
+
 main {
   display: flex;
   gap: 20px;
@@ -58,12 +91,19 @@ main {
   padding: 12px;
 }
 
-canvas#stage {
+canvas#stage,
+canvas#grid-stage {
   display: block;
   max-width: 100%;
   height: auto;
   background: #0a0f16;
   border-radius: 8px;
+}
+
+.mode-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 #panel {

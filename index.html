@@ -12,44 +12,87 @@
     <p class="tagline">Watch classic algorithms think, one step at a time.</p>
   </header>
 
+  <div id="mode-tabs" class="tabs">
+    <button id="tab-sorting" class="tab-btn active" data-mode="sorting">Sorting</button>
+    <button id="tab-pathfinding" class="tab-btn" data-mode="pathfinding">Pathfinding</button>
+  </div>
+
   <main>
     <div id="stage-wrap">
       <canvas id="stage" width="820" height="420"></canvas>
+      <canvas id="grid-stage" width="820" height="420" class="hidden"></canvas>
     </div>
 
     <aside id="panel">
-      <label class="field">
-        Algorithm
-        <select id="algo-select">
-          <option value="bubble">Bubble Sort</option>
-          <option value="selection">Selection Sort</option>
-          <option value="insertion">Insertion Sort</option>
-          <option value="merge">Merge Sort</option>
-          <option value="quick">Quick Sort</option>
-        </select>
-      </label>
+      <div id="panel-sorting" class="mode-panel">
+        <label class="field">
+          Algorithm
+          <select id="algo-select">
+            <option value="bubble">Bubble Sort</option>
+            <option value="selection">Selection Sort</option>
+            <option value="insertion">Insertion Sort</option>
+            <option value="merge">Merge Sort</option>
+            <option value="quick">Quick Sort</option>
+          </select>
+        </label>
 
-      <div class="controls">
-        <button id="btn-start">Start</button>
-        <button id="btn-shuffle">New Array</button>
+        <div class="controls">
+          <button id="btn-start">Start</button>
+          <button id="btn-shuffle">New Array</button>
+        </div>
+
+        <label class="field">
+          Speed
+          <input id="speed" type="range" min="1" max="10" value="5" step="1">
+        </label>
+
+        <div class="stat-row">
+          <span class="stat-label">Comparisons</span>
+          <span id="stat-compares" class="stat-value">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Swaps</span>
+          <span id="stat-swaps" class="stat-value">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Status</span>
+          <span id="stat-status" class="stat-value">Idle</span>
+        </div>
       </div>
 
-      <label class="field">
-        Speed
-        <input id="speed" type="range" min="1" max="10" value="5" step="1">
-      </label>
+      <div id="panel-pathfinding" class="mode-panel hidden">
+        <label class="field">
+          Algorithm
+          <select id="grid-algo-select">
+            <option value="bfs">Breadth-First Search</option>
+            <option value="dfs">Depth-First Search</option>
+            <option value="dijkstra">Dijkstra's Algorithm</option>
+            <option value="astar">A* Search</option>
+          </select>
+        </label>
 
-      <div class="stat-row">
-        <span class="stat-label">Comparisons</span>
-        <span id="stat-compares" class="stat-value">0</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Swaps</span>
-        <span id="stat-swaps" class="stat-value">0</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Status</span>
-        <span id="stat-status" class="stat-value">Idle</span>
+        <div class="controls">
+          <button id="grid-btn-start">Start</button>
+          <button id="grid-btn-maze">New Maze</button>
+        </div>
+
+        <label class="field">
+          Speed
+          <input id="grid-speed" type="range" min="1" max="10" value="5" step="1">
+        </label>
+
+        <div class="stat-row">
+          <span class="stat-label">Visited</span>
+          <span id="stat-visited" class="stat-value">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Path length</span>
+          <span id="stat-pathlen" class="stat-value">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Status</span>
+          <span id="stat-gridstatus" class="stat-value">Idle</span>
+        </div>
       </div>
 
       <div id="roadmap">

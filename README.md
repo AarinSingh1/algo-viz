@@ -10,7 +10,7 @@ for a week.
 
 - [x] **Day 1** — Sorting visualizer: bubble, selection, insertion, merge,
       and quick sort, animated bar-by-bar with live comparison/swap counts.
-- [ ] **Day 2** — Pathfinding on a grid: BFS, DFS, Dijkstra, A*.
+- [x] **Day 2** — Pathfinding on a grid: BFS, DFS, Dijkstra, A*.
 - [ ] **Day 3** — Race mode: two algorithms side by side on the same input.
 - [ ] **Day 4** — Manual stepping + step/comparison counters.
 - [ ] **Day 5** — Custom input: type your own array, draw your own maze.
@@ -33,3 +33,8 @@ Just open `index.html` in a browser. Everything is plain HTML/CSS/JS.
   on a speed-controlled clock and repaints the bars — the renderer knows
   nothing about the algorithm, so future algorithm families (pathfinding,
   etc.) can plug into the same loop.
+- Pathfinding mode (BFS, DFS, Dijkstra, A*) runs on a grid maze using the
+  same generator/step pattern — cells yield `frontier`, `visit`, and `path`
+  steps instead of `compare`/`swap`/`sorted`. Switch modes with the
+  Sorting/Pathfinding tabs above the canvas; each mode keeps its own panel,
+  canvas, and driver state so neither interferes with the other.

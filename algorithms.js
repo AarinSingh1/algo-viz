@@ -134,3 +134,174 @@ const ALGORITHMS = {
   merge: mergeSort,
   quick: quickSort,
 };
+
+// --- Pathfinding (Day 2) ---------------------------------------------------
+// Same generator pattern as the sorters above, but operating on a grid
+// instead of an array. Each cell is addressed by a flat index
+// `i = row * cols + col` so steps stay simple values, exactly like the
+// sorters' array indices.
+//
+// Step shapes:
+//   { type: "frontier", i } — cell i was added to the frontier/open set
+//   { type: "visit", i }    — cell i was dequeued/settled and examined
+//   { type: "path", i }     — cell i is part of the reconstructed path
+
+function makeGrid(cols, rows, wallSet, start, end) {
+  return {
+    cols,
+    rows,
+    start,
+    end,
+    neighbors(i) {
+      const r = Math.floor(i / cols);
+      const c = i % cols;
+      const out = [];
+      if (r > 0) out.push(i - cols);
+      if (r < rows - 1) out.push(i + cols);
+      if (c > 0) out.push(i - 1);
+      if (c < cols - 1) out.push(i + 1);
+      return out.filter((n) => !wallSet.has(n));
+    },
+  };
+}
+
+function* reconstructPath(cameFrom, end, start) {
+  const path = [end];
+  let cur = end;
+  while (cur !== start) {
+    cur = cameFrom.get(cur);
+    if (cur === undefined) return;
+    path.push(cur);
+  }
+  path.reverse();
+  for (const i of path) yield { type: "path", i };
+}
+
+function* bfs(grid) {
+  const { start, end } = grid;
+  const visited = new Set([start]);
+  const queue = [start];
+  const cameFrom = new Map();
+  yield { type: "frontier", i: start };
+  while (queue.length) {
+    const current = queue.shift();
+    yield { type: "visit", i: current };
+    if (current === end) {
+      yield* reconstructPath(cameFrom, end, start);
+      return;
+    }
+    for (const next of grid.neighbors(current)) {
+      if (!visited.has(next)) {
+        visited.add(next);
+        cameFrom.set(next, current);
+        queue.push(next);
+        yield { type: "frontier", i: next };
+      }
+    }
+  }
+}
+
+function* dfs(grid) {
+  const { start, end } = grid;
+  const visited = new Set([start]);
+  const stack = [start];
+  const cameFrom = new Map();
+  yield { type: "frontier", i: start };
+  while (stack.length) {
+    const current = stack.pop();
+    yield { type: "visit", i: current };
+    if (current === end) {
+      yield* reconstructPath(cameFrom, end, start);
+      return;
+    }
+    for (const next of grid.neighbors(current)) {
+      if (!visited.has(next)) {
+        visited.add(next);
+        cameFrom.set(next, current);
+        stack.push(next);
+        yield { type: "frontier", i: next };
+      }
+    }
+  }
+}
+
+function* dijkstra(grid) {
+  const { start, end } = grid;
+  const dist = new Map([[start, 0]]);
+  const visited = new Set();
+  const cameFrom = new Map();
+  const frontier = [start];
+  yield { type: "frontier", i: start };
+  while (frontier.length) {
+    let bi = 0;
+    for (let k = 1; k < frontier.length; k++) {
+      if (dist.get(frontier[k]) < dist.get(frontier[bi])) bi = k;
+    }
+    const current = frontier.splice(bi, 1)[0];
+    if (visited.has(current)) continue;
+    visited.add(current);
+    yield { type: "visit", i: current };
+    if (current === end) {
+      yield* reconstructPath(cameFrom, end, start);
+      return;
+    }
+    for (const next of grid.neighbors(current)) {
+      const nd = dist.get(current) + 1;
+      if (!dist.has(next) || nd < dist.get(next)) {
+        dist.set(next, nd);
+        cameFrom.set(next, current);
+        if (!visited.has(next)) {
+          frontier.push(next);
+          yield { type: "frontier", i: next };
+        }
+      }
+    }
+  }
+}
+
+function* astar(grid) {
+  const { start, end, cols } = grid;
+  const endR = Math.floor(end / cols);
+  const endC = end % cols;
+  const h = (i) => Math.abs(Math.floor(i / cols) - endR) + Math.abs((i % cols) - endC);
+
+  const gScore = new Map([[start, 0]]);
+  const fScore = new Map([[start, h(start)]]);
+  const visited = new Set();
+  const cameFrom = new Map();
+  const open = [start];
+  yield { type: "frontier", i: start };
+  while (open.length) {
+    let bi = 0;
+    for (let k = 1; k < open.length; k++) {
+      if (fScore.get(open[k]) < fScore.get(open[bi])) bi = k;
+    }
+    const current = open.splice(bi, 1)[0];
+    if (visited.has(current)) continue;
+    visited.add(current);
+    yield { type: "visit", i: current };
+    if (current === end) {
+      yield* reconstructPath(cameFrom, end, start);
+      return;
+    }
+    for (const next of grid.neighbors(current)) {
+      const tentative = gScore.get(current) + 1;
+      if (!gScore.has(next) || tentative < gScore.get(next)) {
+        gScore.set(next, tentative);
+        fScore.set(next, tentative + h(next));
+        cameFrom.set(next, current);
+        if (!visited.has(next)) {
+          open.push(next);
+          yield { type: "frontier", i: next };
+        }
+      }
+    }
+  }
+}
+
+const PATHFINDING_ALGORITHMS = {
+  bfs,
+  dfs,
+  dijkstra,
+  astar,
+};
