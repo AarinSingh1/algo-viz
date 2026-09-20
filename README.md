@@ -11,7 +11,7 @@ for a week.
 - [x] **Day 1** — Sorting visualizer: bubble, selection, insertion, merge,
       and quick sort, animated bar-by-bar with live comparison/swap counts.
 - [x] **Day 2** — Pathfinding on a grid: BFS, DFS, Dijkstra, A*.
-- [ ] **Day 3** — Race mode: two algorithms side by side on the same input.
+- [x] **Day 3** — Race mode: two algorithms side by side on the same input.
 - [ ] **Day 4** — Manual stepping + step/comparison counters.
 - [ ] **Day 5** — Custom input: type your own array, draw your own maze.
 - [ ] **Day 6** — Complexity overlay: live counts vs Big-O reference curves.
@@ -38,3 +38,9 @@ Just open `index.html` in a browser. Everything is plain HTML/CSS/JS.
   steps instead of `compare`/`swap`/`sorted`. Switch modes with the
   Sorting/Pathfinding tabs above the canvas; each mode keeps its own panel,
   canvas, and driver state so neither interferes with the other.
+- Race mode (the Race tab) picks up the same sorting generators and runs
+  two of them side by side — one per canvas, one algorithm selector each —
+  advanced by a single shared clock that steps both generators exactly once
+  per tick, so their progress is directly comparable. Each side tracks its
+  own live comparison/swap counts, and once both finish, the total steps
+  each generator needed decide the winner and the margin.

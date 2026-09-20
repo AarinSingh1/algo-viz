@@ -1,9 +1,11 @@
-// Algo Viz — Day 1 (sorting) + Day 2 (pathfinding)
-// Both modes share the same pattern: pull one "step" at a time off a
+// Algo Viz — Day 1 (sorting) + Day 2 (pathfinding) + Day 3 (race mode)
+// All modes share the same pattern: pull one "step" at a time off a
 // generator (from algorithms.js) on a speed-controlled clock, apply it to
-// shared state, and paint. Sorting drives bars from a shared array; the
-// Day 2 section below drives a grid the same way. A mode switch just picks
-// which half of the combined driver loop advances each frame.
+// shared state, and paint. Sorting drives bars from a shared array; Day 2
+// drives a grid the same way; Day 3 runs two sorting generators side by
+// side off one shared clock so their progress is directly comparable. A
+// mode switch just picks which branch of the combined driver loop advances
+// each frame.
 
 const canvas = document.getElementById("stage");
 const ctx = canvas.getContext("2d");
@@ -319,20 +321,226 @@ gridMazeBtn.addEventListener("click", () => {
   drawGrid();
 });
 
+// --- Day 3: Race mode -------------------------------------------------
+// Runs two ALGORITHMS generators side by side on identical starting
+// arrays, both advanced by one shared clock (exactly one step per side per
+// tick) so their progress is genuinely comparable. Each side is just a
+// bundle of the same per-run state Day 1 keeps in module-level variables,
+// so nothing about the sorters themselves is duplicated.
+
+const raceLeftCanvas = document.getElementById("race-stage-left");
+const raceRightCanvas = document.getElementById("race-stage-right");
+const raceLeftCtx = raceLeftCanvas.getContext("2d");
+const raceRightCtx = raceRightCanvas.getContext("2d");
+const RW = raceLeftCanvas.width;
+const RH = raceLeftCanvas.height;
+
+const RACE_ARRAY_SIZE = 50;
+
+const raceAlgoLeftSelect = document.getElementById("race-algo-left");
+const raceAlgoRightSelect = document.getElementById("race-algo-right");
+const raceLabelLeftEl = document.getElementById("race-label-left");
+const raceLabelRightEl = document.getElementById("race-label-right");
+const raceSpeedInput = document.getElementById("race-speed");
+const raceStartBtn = document.getElementById("race-btn-start");
+const raceShuffleBtn = document.getElementById("race-btn-shuffle");
+const raceStatusEl = document.getElementById("race-status");
+
+function makeRaceSide(label, ctx, select, labelEl, comparesEl, swapsEl, statusEl) {
+  return {
+    label, ctx, select, labelEl, comparesEl, swapsEl, statusEl,
+    arr: [],
+    gen: null,
+    comparisons: 0,
+    swaps: 0,
+    steps: 0,
+    done: false,
+    compareSet: new Set(),
+    swapSet: new Set(),
+    sortedSet: new Set(),
+  };
+}
+
+const raceLeft = makeRaceSide(
+  "left", raceLeftCtx, raceAlgoLeftSelect, raceLabelLeftEl,
+  document.getElementById("race-compares-left"),
+  document.getElementById("race-swaps-left"),
+  document.getElementById("race-status-left")
+);
+const raceRight = makeRaceSide(
+  "right", raceRightCtx, raceAlgoRightSelect, raceLabelRightEl,
+  document.getElementById("race-compares-right"),
+  document.getElementById("race-swaps-right"),
+  document.getElementById("race-status-right")
+);
+const raceSides = [raceLeft, raceRight];
+
+let raceRunning = false;
+let raceAcc = 0;
+let raceLastTime = 0;
+
+function raceNewArray() {
+  const base = randomArray(RACE_ARRAY_SIZE);
+  for (const side of raceSides) side.arr = base.slice();
+  resetRaceRun();
+}
+
+function resetRaceRun() {
+  raceRunning = false;
+  raceAcc = 0;
+  raceLastTime = 0;
+  raceStatusEl.textContent = "Idle";
+  raceStartBtn.textContent = "Start";
+  raceAlgoLeftSelect.disabled = false;
+  raceAlgoRightSelect.disabled = false;
+  for (const side of raceSides) {
+    side.gen = null;
+    side.comparisons = 0;
+    side.swaps = 0;
+    side.steps = 0;
+    side.done = false;
+    side.compareSet.clear();
+    side.swapSet.clear();
+    side.sortedSet.clear();
+    side.comparesEl.textContent = "0";
+    side.swapsEl.textContent = "0";
+    side.statusEl.textContent = "Idle";
+  }
+}
+
+function applyRaceStep(side, step) {
+  side.compareSet.clear();
+  side.swapSet.clear();
+  if (step.type === "compare") {
+    side.compareSet.add(step.i);
+    side.compareSet.add(step.j);
+    side.comparisons++;
+    side.comparesEl.textContent = side.comparisons;
+  } else if (step.type === "swap") {
+    side.swapSet.add(step.i);
+    side.swapSet.add(step.j);
+    side.swaps++;
+    side.swapsEl.textContent = side.swaps;
+  } else if (step.type === "overwrite") {
+    side.swapSet.add(step.i);
+    side.swaps++;
+    side.swapsEl.textContent = side.swaps;
+  } else if (step.type === "sorted") {
+    side.sortedSet.add(step.i);
+  }
+}
+
+function finishRaceSide(side) {
+  side.done = true;
+  side.compareSet.clear();
+  side.swapSet.clear();
+  for (let i = 0; i < side.arr.length; i++) side.sortedSet.add(i);
+  side.statusEl.textContent = `Finished (${side.steps} steps)`;
+  checkRaceFinish();
+}
+
+function checkRaceFinish() {
+  if (!raceLeft.done || !raceRight.done) return;
+  raceRunning = false;
+  raceStartBtn.textContent = "Start";
+  raceAlgoLeftSelect.disabled = false;
+  raceAlgoRightSelect.disabled = false;
+  if (raceLeft.steps === raceRight.steps) {
+    raceStatusEl.textContent = "Tie!";
+  } else {
+    const winner = raceLeft.steps < raceRight.steps ? raceLeft : raceRight;
+    const loser = winner === raceLeft ? raceRight : raceLeft;
+    const winnerName = winner.select.selectedOptions[0].textContent;
+    raceStatusEl.textContent = `${winnerName} (${winner.label}) wins by ${loser.steps - winner.steps} steps!`;
+  }
+}
+
+function drawRaceSide(side) {
+  const ctx = side.ctx;
+  ctx.clearRect(0, 0, RW, RH);
+  const barWidth = RW / side.arr.length;
+  for (let i = 0; i < side.arr.length; i++) {
+    const val = side.arr[i];
+    const barHeight = (val / MAX_VALUE) * (RH - 10);
+    let color;
+    if (side.sortedSet.has(i)) color = getCss("--bar-sorted");
+    else if (side.swapSet.has(i)) color = getCss("--bar-swap");
+    else if (side.compareSet.has(i)) color = getCss("--bar-compare");
+    else color = getCss("--bar");
+    ctx.fillStyle = color;
+    ctx.fillRect(i * barWidth + 1, RH - barHeight, barWidth - 2, barHeight);
+  }
+}
+
+function drawRace() {
+  drawRaceSide(raceLeft);
+  drawRaceSide(raceRight);
+}
+
+raceStartBtn.addEventListener("click", () => {
+  if (!raceLeft.gen) {
+    raceLeft.gen = ALGORITHMS[raceAlgoLeftSelect.value](raceLeft.arr);
+    raceRight.gen = ALGORITHMS[raceAlgoRightSelect.value](raceRight.arr);
+    for (const side of raceSides) {
+      side.comparisons = 0;
+      side.swaps = 0;
+      side.steps = 0;
+      side.done = false;
+      side.sortedSet.clear();
+      side.comparesEl.textContent = "0";
+      side.swapsEl.textContent = "0";
+      side.statusEl.textContent = "Running";
+    }
+    raceAlgoLeftSelect.disabled = true;
+    raceAlgoRightSelect.disabled = true;
+    raceStatusEl.textContent = "Racing...";
+    raceRunning = true;
+    raceStartBtn.textContent = "Pause";
+    raceAcc = 0;
+    raceLastTime = 0;
+  } else if (raceRunning) {
+    raceRunning = false;
+    raceStatusEl.textContent = "Paused";
+    raceStartBtn.textContent = "Resume";
+  } else {
+    raceRunning = true;
+    raceStatusEl.textContent = "Racing...";
+    raceStartBtn.textContent = "Pause";
+  }
+});
+
+raceShuffleBtn.addEventListener("click", () => {
+  raceNewArray();
+  drawRace();
+});
+
+raceAlgoLeftSelect.addEventListener("change", () => {
+  raceLabelLeftEl.textContent = raceAlgoLeftSelect.selectedOptions[0].textContent;
+});
+raceAlgoRightSelect.addEventListener("change", () => {
+  raceLabelRightEl.textContent = raceAlgoRightSelect.selectedOptions[0].textContent;
+});
+
 // --- Mode switching ----------------------------------------------------
 
 let mode = "sorting";
 const tabButtons = document.querySelectorAll(".tab-btn");
+const stageWrap = document.getElementById("stage-wrap");
 const sortingPanel = document.getElementById("panel-sorting");
 const pathfindingPanel = document.getElementById("panel-pathfinding");
+const racePanel = document.getElementById("panel-race");
+const raceStageWrap = document.getElementById("race-stage-wrap");
 
 function setMode(newMode) {
   mode = newMode;
   tabButtons.forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
   sortingPanel.classList.toggle("hidden", mode !== "sorting");
   pathfindingPanel.classList.toggle("hidden", mode !== "pathfinding");
+  racePanel.classList.toggle("hidden", mode !== "race");
+  stageWrap.classList.toggle("hidden", mode === "race");
   canvas.classList.toggle("hidden", mode !== "sorting");
   gridCanvas.classList.toggle("hidden", mode !== "pathfinding");
+  raceStageWrap.classList.toggle("hidden", mode !== "race");
 }
 
 tabButtons.forEach((btn) => btn.addEventListener("click", () => setMode(btn.dataset.mode)));
@@ -342,7 +550,33 @@ tabButtons.forEach((btn) => btn.addEventListener("click", () => setMode(btn.data
 // and the Day 2 pathfinding loop share one requestAnimationFrame clock.
 
 function frame(ts) {
-  if (mode === "sorting") {
+  if (mode === "race") {
+    if (raceRunning) {
+      if (!raceLastTime) raceLastTime = ts;
+      raceAcc += ts - raceLastTime;
+      raceLastTime = ts;
+      const interval = speedToInterval(Number(raceSpeedInput.value));
+      let stepsThisFrame = 0;
+      while (raceAcc >= interval && stepsThisFrame < 500) {
+        raceAcc -= interval;
+        stepsThisFrame++;
+        for (const side of raceSides) {
+          if (side.done || !side.gen) continue;
+          const { value, done } = side.gen.next();
+          if (done) {
+            finishRaceSide(side);
+          } else {
+            side.steps++;
+            applyRaceStep(side, value);
+          }
+        }
+        if (raceLeft.done && raceRight.done) break;
+      }
+    } else {
+      raceLastTime = ts;
+    }
+    drawRace();
+  } else if (mode === "sorting") {
     if (running && gen) {
       if (!lastTime) lastTime = ts;
       acc += ts - lastTime;
@@ -391,6 +625,8 @@ function frame(ts) {
 arr = randomArray(ARRAY_SIZE);
 renderRoadmap();
 generateMaze();
+raceNewArray();
 draw();
 drawGrid();
+drawRace();
 requestAnimationFrame(frame);

@@ -15,12 +15,24 @@
   <div id="mode-tabs" class="tabs">
     <button id="tab-sorting" class="tab-btn active" data-mode="sorting">Sorting</button>
     <button id="tab-pathfinding" class="tab-btn" data-mode="pathfinding">Pathfinding</button>
+    <button id="tab-race" class="tab-btn" data-mode="race">Race</button>
   </div>
 
   <main>
     <div id="stage-wrap">
       <canvas id="stage" width="820" height="420"></canvas>
       <canvas id="grid-stage" width="820" height="420" class="hidden"></canvas>
+    </div>
+
+    <div id="race-stage-wrap" class="hidden">
+      <div class="race-col">
+        <div class="race-canvas-label" id="race-label-left">Bubble Sort</div>
+        <canvas id="race-stage-left" width="400" height="420"></canvas>
+      </div>
+      <div class="race-col">
+        <div class="race-canvas-label" id="race-label-right">Quick Sort</div>
+        <canvas id="race-stage-right" width="400" height="420"></canvas>
+      </div>
     </div>
 
     <aside id="panel">
@@ -92,6 +104,78 @@
         <div class="stat-row">
           <span class="stat-label">Status</span>
           <span id="stat-gridstatus" class="stat-value">Idle</span>
+        </div>
+      </div>
+
+      <div id="panel-race" class="mode-panel hidden">
+        <label class="field">
+          Left algorithm
+          <select id="race-algo-left">
+            <option value="bubble">Bubble Sort</option>
+            <option value="selection">Selection Sort</option>
+            <option value="insertion">Insertion Sort</option>
+            <option value="merge">Merge Sort</option>
+            <option value="quick">Quick Sort</option>
+          </select>
+        </label>
+
+        <label class="field">
+          Right algorithm
+          <select id="race-algo-right">
+            <option value="bubble">Bubble Sort</option>
+            <option value="selection">Selection Sort</option>
+            <option value="insertion">Insertion Sort</option>
+            <option value="merge">Merge Sort</option>
+            <option value="quick" selected>Quick Sort</option>
+          </select>
+        </label>
+
+        <div class="controls">
+          <button id="race-btn-start">Start</button>
+          <button id="race-btn-shuffle">New Array</button>
+        </div>
+
+        <label class="field">
+          Speed
+          <input id="race-speed" type="range" min="1" max="10" value="5" step="1">
+        </label>
+
+        <div class="race-stats">
+          <div class="race-stat-block">
+            <div class="race-stat-heading">Left</div>
+            <div class="stat-row">
+              <span class="stat-label">Comparisons</span>
+              <span id="race-compares-left" class="stat-value">0</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Swaps</span>
+              <span id="race-swaps-left" class="stat-value">0</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Status</span>
+              <span id="race-status-left" class="stat-value">Idle</span>
+            </div>
+          </div>
+          <div class="race-stat-block">
+            <div class="race-stat-heading">Right</div>
+            <div class="stat-row">
+              <span class="stat-label">Comparisons</span>
+              <span id="race-compares-right" class="stat-value">0</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Swaps</span>
+              <span id="race-swaps-right" class="stat-value">0</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Status</span>
+              <span id="race-status-right" class="stat-value">Idle</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label">Race</span>
+          <span id="race-status" class="stat-value">Idle</span>
         </div>
       </div>
 
