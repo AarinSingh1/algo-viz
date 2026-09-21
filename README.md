@@ -12,7 +12,7 @@ for a week.
       and quick sort, animated bar-by-bar with live comparison/swap counts.
 - [x] **Day 2** — Pathfinding on a grid: BFS, DFS, Dijkstra, A*.
 - [x] **Day 3** — Race mode: two algorithms side by side on the same input.
-- [ ] **Day 4** — Manual stepping + step/comparison counters.
+- [x] **Day 4** — Manual stepping + step/comparison counters.
 - [ ] **Day 5** — Custom input: type your own array, draw your own maze.
 - [ ] **Day 6** — Complexity overlay: live counts vs Big-O reference curves.
 - [ ] **Day 7** — Home dashboard: every algorithm, one gallery view.
@@ -44,3 +44,9 @@ Just open `index.html` in a browser. Everything is plain HTML/CSS/JS.
   per tick, so their progress is directly comparable. Each side tracks its
   own live comparison/swap counts, and once both finish, the total steps
   each generator needed decide the winner and the margin.
+- A Step button next to Start in every mode's panel advances the active
+  generator by exactly one step and pauses, whether or not auto-play was
+  running — it calls the same `advance*Step()` function the auto-play
+  clock uses, so nothing about step handling is duplicated per mode. A
+  running step counter (separate from comparisons/swaps/visited) shows
+  exactly how many discrete steps have elapsed.

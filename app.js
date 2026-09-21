@@ -15,9 +15,11 @@ const H = canvas.height;
 const algoSelect = document.getElementById("algo-select");
 const speedInput = document.getElementById("speed");
 const startBtn = document.getElementById("btn-start");
+const stepBtn = document.getElementById("btn-step");
 const shuffleBtn = document.getElementById("btn-shuffle");
 const comparesEl = document.getElementById("stat-compares");
 const swapsEl = document.getElementById("stat-swaps");
+const stepsEl = document.getElementById("stat-steps");
 const statusEl = document.getElementById("stat-status");
 
 const ARRAY_SIZE = 70;
@@ -28,6 +30,7 @@ let gen = null;
 let running = false;
 let comparisons = 0;
 let swaps = 0;
+let sortSteps = 0;
 let lastTime = 0;
 let acc = 0;
 
@@ -44,14 +47,48 @@ function resetRun() {
   running = false;
   comparisons = 0;
   swaps = 0;
+  sortSteps = 0;
   compareSet.clear();
   swapSet.clear();
   sortedSet.clear();
   comparesEl.textContent = "0";
   swapsEl.textContent = "0";
+  stepsEl.textContent = "0";
   statusEl.textContent = "Idle";
   startBtn.textContent = "Start";
   algoSelect.disabled = false;
+}
+
+// Creates a fresh generator and resets per-run counters. Shared by Start
+// (first click) and Step (when nothing is running yet) so neither
+// duplicates the other's init logic.
+function startSortGen() {
+  gen = ALGORITHMS[algoSelect.value](arr);
+  comparisons = 0;
+  swaps = 0;
+  sortSteps = 0;
+  sortedSet.clear();
+  comparesEl.textContent = "0";
+  swapsEl.textContent = "0";
+  stepsEl.textContent = "0";
+  algoSelect.disabled = true;
+}
+
+// Pulls exactly one step off the sorting generator and applies it. This is
+// the single code path both auto-play (in frame()) and the manual Step
+// button use, so neither duplicates the other's step-handling logic.
+// Returns true once the generator has finished.
+function advanceSortStep() {
+  if (!gen) return true;
+  const { value, done } = gen.next();
+  if (done) {
+    finishRun();
+    return true;
+  }
+  sortSteps++;
+  stepsEl.textContent = sortSteps;
+  applyStep(value);
+  return false;
 }
 
 function speedToInterval(s) {
@@ -118,13 +155,7 @@ function getCss(varName) {
 
 startBtn.addEventListener("click", () => {
   if (!gen) {
-    gen = ALGORITHMS[algoSelect.value](arr);
-    comparisons = 0;
-    swaps = 0;
-    sortedSet.clear();
-    comparesEl.textContent = "0";
-    swapsEl.textContent = "0";
-    algoSelect.disabled = true;
+    startSortGen();
     statusEl.textContent = "Running";
     running = true;
     startBtn.textContent = "Pause";
@@ -137,6 +168,19 @@ startBtn.addEventListener("click", () => {
     statusEl.textContent = "Running";
     startBtn.textContent = "Pause";
   }
+});
+
+stepBtn.addEventListener("click", () => {
+  if (!gen) startSortGen();
+  const finished = advanceSortStep();
+  if (!finished) {
+    running = false;
+    acc = 0;
+    lastTime = 0;
+    statusEl.textContent = "Paused";
+    startBtn.textContent = "Resume";
+  }
+  draw();
 });
 
 shuffleBtn.addEventListener("click", () => {
@@ -178,9 +222,11 @@ const endIdx = START_ROW * GRID_COLS + (GRID_COLS - 1);
 const gridAlgoSelect = document.getElementById("grid-algo-select");
 const gridSpeedInput = document.getElementById("grid-speed");
 const gridStartBtn = document.getElementById("grid-btn-start");
+const gridStepBtn = document.getElementById("grid-btn-step");
 const gridMazeBtn = document.getElementById("grid-btn-maze");
 const visitedEl = document.getElementById("stat-visited");
 const pathLenEl = document.getElementById("stat-pathlen");
+const gridStepsEl = document.getElementById("stat-gridsteps");
 const gridStatusEl = document.getElementById("stat-gridstatus");
 
 let wallSet = new Set();
@@ -189,6 +235,7 @@ let pathRunning = false;
 let gridAcc = 0;
 let gridLastTime = 0;
 let visitedCount = 0;
+let gridSteps = 0;
 
 let frontierSet = new Set();
 let visitedSet = new Set();
@@ -240,11 +287,44 @@ function resetGridRun() {
   visitedSet.clear();
   pathSet.clear();
   visitedCount = 0;
+  gridSteps = 0;
   visitedEl.textContent = "0";
   pathLenEl.textContent = "0";
+  gridStepsEl.textContent = "0";
   gridStatusEl.textContent = "Idle";
   gridStartBtn.textContent = "Start";
   gridAlgoSelect.disabled = false;
+}
+
+// Mirrors startSortGen(): creates a fresh grid generator and resets
+// per-run counters, shared by Start and Step.
+function startPathGen() {
+  const grid = makeGrid(GRID_COLS, GRID_ROWS, wallSet, startIdx, endIdx);
+  pathGen = PATHFINDING_ALGORITHMS[gridAlgoSelect.value](grid);
+  frontierSet.clear();
+  visitedSet.clear();
+  pathSet.clear();
+  visitedCount = 0;
+  gridSteps = 0;
+  visitedEl.textContent = "0";
+  pathLenEl.textContent = "0";
+  gridStepsEl.textContent = "0";
+  gridAlgoSelect.disabled = true;
+}
+
+// Mirrors advanceSortStep(): the single code path both auto-play and the
+// manual Step button use to pull one step off the grid generator.
+function advancePathStep() {
+  if (!pathGen) return true;
+  const { value, done } = pathGen.next();
+  if (done) {
+    finishGridRun();
+    return true;
+  }
+  gridSteps++;
+  gridStepsEl.textContent = gridSteps;
+  applyGridStep(value);
+  return false;
 }
 
 function applyGridStep(step) {
@@ -290,15 +370,7 @@ function drawGrid() {
 
 gridStartBtn.addEventListener("click", () => {
   if (!pathGen) {
-    const grid = makeGrid(GRID_COLS, GRID_ROWS, wallSet, startIdx, endIdx);
-    pathGen = PATHFINDING_ALGORITHMS[gridAlgoSelect.value](grid);
-    frontierSet.clear();
-    visitedSet.clear();
-    pathSet.clear();
-    visitedCount = 0;
-    visitedEl.textContent = "0";
-    pathLenEl.textContent = "0";
-    gridAlgoSelect.disabled = true;
+    startPathGen();
     gridStatusEl.textContent = "Running";
     pathRunning = true;
     gridStartBtn.textContent = "Pause";
@@ -313,6 +385,19 @@ gridStartBtn.addEventListener("click", () => {
     gridStatusEl.textContent = "Running";
     gridStartBtn.textContent = "Pause";
   }
+});
+
+gridStepBtn.addEventListener("click", () => {
+  if (!pathGen) startPathGen();
+  const finished = advancePathStep();
+  if (!finished) {
+    pathRunning = false;
+    gridAcc = 0;
+    gridLastTime = 0;
+    gridStatusEl.textContent = "Paused";
+    gridStartBtn.textContent = "Resume";
+  }
+  drawGrid();
 });
 
 gridMazeBtn.addEventListener("click", () => {
@@ -343,12 +428,13 @@ const raceLabelLeftEl = document.getElementById("race-label-left");
 const raceLabelRightEl = document.getElementById("race-label-right");
 const raceSpeedInput = document.getElementById("race-speed");
 const raceStartBtn = document.getElementById("race-btn-start");
+const raceStepBtn = document.getElementById("race-btn-step");
 const raceShuffleBtn = document.getElementById("race-btn-shuffle");
 const raceStatusEl = document.getElementById("race-status");
 
-function makeRaceSide(label, ctx, select, labelEl, comparesEl, swapsEl, statusEl) {
+function makeRaceSide(label, ctx, select, labelEl, comparesEl, swapsEl, stepsEl, statusEl) {
   return {
-    label, ctx, select, labelEl, comparesEl, swapsEl, statusEl,
+    label, ctx, select, labelEl, comparesEl, swapsEl, stepsEl, statusEl,
     arr: [],
     gen: null,
     comparisons: 0,
@@ -365,12 +451,14 @@ const raceLeft = makeRaceSide(
   "left", raceLeftCtx, raceAlgoLeftSelect, raceLabelLeftEl,
   document.getElementById("race-compares-left"),
   document.getElementById("race-swaps-left"),
+  document.getElementById("race-steps-left"),
   document.getElementById("race-status-left")
 );
 const raceRight = makeRaceSide(
   "right", raceRightCtx, raceAlgoRightSelect, raceLabelRightEl,
   document.getElementById("race-compares-right"),
   document.getElementById("race-swaps-right"),
+  document.getElementById("race-steps-right"),
   document.getElementById("race-status-right")
 );
 const raceSides = [raceLeft, raceRight];
@@ -404,8 +492,47 @@ function resetRaceRun() {
     side.sortedSet.clear();
     side.comparesEl.textContent = "0";
     side.swapsEl.textContent = "0";
+    side.stepsEl.textContent = "0";
     side.statusEl.textContent = "Idle";
   }
+}
+
+// Mirrors startSortGen()/startPathGen(): creates fresh generators for both
+// sides and resets per-run counters, shared by Start and Step.
+function startRaceGen() {
+  raceLeft.gen = ALGORITHMS[raceAlgoLeftSelect.value](raceLeft.arr);
+  raceRight.gen = ALGORITHMS[raceAlgoRightSelect.value](raceRight.arr);
+  for (const side of raceSides) {
+    side.comparisons = 0;
+    side.swaps = 0;
+    side.steps = 0;
+    side.done = false;
+    side.sortedSet.clear();
+    side.comparesEl.textContent = "0";
+    side.swapsEl.textContent = "0";
+    side.stepsEl.textContent = "0";
+    side.statusEl.textContent = "Running";
+  }
+  raceAlgoLeftSelect.disabled = true;
+  raceAlgoRightSelect.disabled = true;
+}
+
+// Mirrors advanceSortStep()/advancePathStep(): the single code path both
+// auto-play and the manual Step button use to advance both racers by
+// exactly one generator step each. Returns true once both sides are done.
+function advanceRaceStep() {
+  for (const side of raceSides) {
+    if (side.done || !side.gen) continue;
+    const { value, done } = side.gen.next();
+    if (done) {
+      finishRaceSide(side);
+    } else {
+      side.steps++;
+      side.stepsEl.textContent = side.steps;
+      applyRaceStep(side, value);
+    }
+  }
+  return raceLeft.done && raceRight.done;
 }
 
 function applyRaceStep(side, step) {
@@ -479,20 +606,7 @@ function drawRace() {
 
 raceStartBtn.addEventListener("click", () => {
   if (!raceLeft.gen) {
-    raceLeft.gen = ALGORITHMS[raceAlgoLeftSelect.value](raceLeft.arr);
-    raceRight.gen = ALGORITHMS[raceAlgoRightSelect.value](raceRight.arr);
-    for (const side of raceSides) {
-      side.comparisons = 0;
-      side.swaps = 0;
-      side.steps = 0;
-      side.done = false;
-      side.sortedSet.clear();
-      side.comparesEl.textContent = "0";
-      side.swapsEl.textContent = "0";
-      side.statusEl.textContent = "Running";
-    }
-    raceAlgoLeftSelect.disabled = true;
-    raceAlgoRightSelect.disabled = true;
+    startRaceGen();
     raceStatusEl.textContent = "Racing...";
     raceRunning = true;
     raceStartBtn.textContent = "Pause";
@@ -507,6 +621,19 @@ raceStartBtn.addEventListener("click", () => {
     raceStatusEl.textContent = "Racing...";
     raceStartBtn.textContent = "Pause";
   }
+});
+
+raceStepBtn.addEventListener("click", () => {
+  if (!raceLeft.gen) startRaceGen();
+  const finished = advanceRaceStep();
+  if (!finished) {
+    raceRunning = false;
+    raceAcc = 0;
+    raceLastTime = 0;
+    raceStatusEl.textContent = "Paused";
+    raceStartBtn.textContent = "Resume";
+  }
+  drawRace();
 });
 
 raceShuffleBtn.addEventListener("click", () => {
@@ -560,17 +687,7 @@ function frame(ts) {
       while (raceAcc >= interval && stepsThisFrame < 500) {
         raceAcc -= interval;
         stepsThisFrame++;
-        for (const side of raceSides) {
-          if (side.done || !side.gen) continue;
-          const { value, done } = side.gen.next();
-          if (done) {
-            finishRaceSide(side);
-          } else {
-            side.steps++;
-            applyRaceStep(side, value);
-          }
-        }
-        if (raceLeft.done && raceRight.done) break;
+        if (advanceRaceStep()) break;
       }
     } else {
       raceLastTime = ts;
@@ -584,14 +701,9 @@ function frame(ts) {
       const interval = speedToInterval(Number(speedInput.value));
       let stepsThisFrame = 0;
       while (acc >= interval && stepsThisFrame < 500) {
-        const { value, done } = gen.next();
         acc -= interval;
         stepsThisFrame++;
-        if (done) {
-          finishRun();
-          break;
-        }
-        applyStep(value);
+        if (advanceSortStep()) break;
       }
     } else {
       lastTime = ts;
@@ -605,14 +717,9 @@ function frame(ts) {
       const interval = speedToInterval(Number(gridSpeedInput.value));
       let stepsThisFrame = 0;
       while (gridAcc >= interval && stepsThisFrame < 500) {
-        const { value, done } = pathGen.next();
         gridAcc -= interval;
         stepsThisFrame++;
-        if (done) {
-          finishGridRun();
-          break;
-        }
-        applyGridStep(value);
+        if (advancePathStep()) break;
       }
     } else {
       gridLastTime = ts;
