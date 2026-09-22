@@ -1,11 +1,14 @@
-// Algo Viz — Day 1 (sorting) + Day 2 (pathfinding) + Day 3 (race mode)
+// Algo Viz — Day 1 (sorting) + Day 2 (pathfinding) + Day 3 (race mode) +
+// Day 4 (manual stepping) + Day 5 (custom input)
 // All modes share the same pattern: pull one "step" at a time off a
 // generator (from algorithms.js) on a speed-controlled clock, apply it to
 // shared state, and paint. Sorting drives bars from a shared array; Day 2
 // drives a grid the same way; Day 3 runs two sorting generators side by
 // side off one shared clock so their progress is directly comparable. A
 // mode switch just picks which branch of the combined driver loop advances
-// each frame.
+// each frame. Day 5 adds user-supplied input alongside the random
+// generators: a typed array for sorting, and click-to-paint walls for the
+// grid.
 
 const canvas = document.getElementById("stage");
 const ctx = canvas.getContext("2d");
@@ -17,6 +20,9 @@ const speedInput = document.getElementById("speed");
 const startBtn = document.getElementById("btn-start");
 const stepBtn = document.getElementById("btn-step");
 const shuffleBtn = document.getElementById("btn-shuffle");
+const arrayInput = document.getElementById("array-input");
+const applyArrayBtn = document.getElementById("btn-apply-array");
+const arrayErrorEl = document.getElementById("array-input-error");
 const comparesEl = document.getElementById("stat-compares");
 const swapsEl = document.getElementById("stat-swaps");
 const stepsEl = document.getElementById("stat-steps");
@@ -26,6 +32,10 @@ const ARRAY_SIZE = 70;
 const MAX_VALUE = 400;
 
 let arr = [];
+// Draw scale for the sorting bars. Random arrays always fit under
+// MAX_VALUE, but a custom array can contain larger values, so the scale
+// grows to fit whatever the user typed in.
+let drawMax = MAX_VALUE;
 let gen = null;
 let running = false;
 let comparisons = 0;
@@ -134,7 +144,7 @@ function draw() {
   const barWidth = W / arr.length;
   for (let i = 0; i < arr.length; i++) {
     const val = arr[i];
-    const barHeight = (val / MAX_VALUE) * (H - 10);
+    const barHeight = (val / drawMax) * (H - 10);
     let color;
     if (sortedSet.has(i)) color = getCss("--bar-sorted");
     else if (swapSet.has(i)) color = getCss("--bar-swap");
@@ -185,8 +195,45 @@ stepBtn.addEventListener("click", () => {
 
 shuffleBtn.addEventListener("click", () => {
   arr = randomArray(ARRAY_SIZE);
+  drawMax = MAX_VALUE;
+  arrayErrorEl.textContent = "";
   resetRun();
   draw();
+});
+
+// Parses a comma-separated list of numbers for the custom-array field.
+// Non-numeric or non-positive tokens are silently dropped rather than
+// rejecting the whole input, so a stray typo doesn't block the rest.
+function parseCustomArray(text) {
+  const tokens = text.split(",").map((t) => t.trim()).filter((t) => t.length > 0);
+  const values = [];
+  let invalidCount = 0;
+  for (const tok of tokens) {
+    const n = Number(tok);
+    if (Number.isFinite(n) && n > 0) values.push(n);
+    else invalidCount++;
+  }
+  return { values, invalidCount };
+}
+
+function applyCustomArray() {
+  const { values, invalidCount } = parseCustomArray(arrayInput.value);
+  if (values.length < 2) {
+    arrayErrorEl.textContent = "Enter at least 2 positive numbers, separated by commas.";
+    return;
+  }
+  arr = values;
+  drawMax = Math.max(MAX_VALUE, ...values);
+  resetRun();
+  draw();
+  arrayErrorEl.textContent = invalidCount > 0
+    ? `Used ${values.length} value(s); ignored ${invalidCount} invalid ${invalidCount === 1 ? "entry" : "entries"}.`
+    : "";
+}
+
+applyArrayBtn.addEventListener("click", applyCustomArray);
+arrayInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") applyCustomArray();
 });
 
 function renderRoadmap() {
@@ -404,6 +451,50 @@ gridMazeBtn.addEventListener("click", () => {
   generateMaze();
   resetGridRun();
   drawGrid();
+});
+
+// Lets the user paint their own maze by hand: click or drag across cells to
+// toggle walls on/off, on top of (or instead of) the random "New Maze"
+// layout. Painting cancels any in-progress run, same as New Maze does,
+// since the grid it was searching no longer matches what's drawn.
+let isPaintingWalls = false;
+let wallPaintValue = true;
+
+function cellIndexFromEvent(e) {
+  const rect = gridCanvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * (GW / rect.width);
+  const y = (e.clientY - rect.top) * (GH / rect.height);
+  const c = Math.floor(x / CELL);
+  const r = Math.floor(y / CELL);
+  if (c < 0 || c >= GRID_COLS || r < 0 || r >= GRID_ROWS) return null;
+  return r * GRID_COLS + c;
+}
+
+function paintWallAt(idx, adding) {
+  if (idx === null || idx === startIdx || idx === endIdx) return;
+  if (adding) wallSet.add(idx);
+  else wallSet.delete(idx);
+}
+
+gridCanvas.addEventListener("mousedown", (e) => {
+  const idx = cellIndexFromEvent(e);
+  if (idx === null || idx === startIdx || idx === endIdx) return;
+  e.preventDefault();
+  isPaintingWalls = true;
+  wallPaintValue = !wallSet.has(idx);
+  paintWallAt(idx, wallPaintValue);
+  resetGridRun();
+  drawGrid();
+});
+
+window.addEventListener("mousemove", (e) => {
+  if (!isPaintingWalls) return;
+  paintWallAt(cellIndexFromEvent(e), wallPaintValue);
+  drawGrid();
+});
+
+window.addEventListener("mouseup", () => {
+  isPaintingWalls = false;
 });
 
 // --- Day 3: Race mode -------------------------------------------------

@@ -100,6 +100,11 @@ canvas#grid-stage {
   border-radius: 8px;
 }
 
+canvas#grid-stage {
+  cursor: crosshair;
+  user-select: none;
+}
+
 .mode-panel {
   display: flex;
   flex-direction: column;
@@ -186,6 +191,47 @@ select {
   border-radius: 6px;
   padding: 8px;
   font-size: 14px;
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+}
+
+input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  background: #0a0f16;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.input-row button {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+}
+
+.input-error {
+  display: block;
+  min-height: 14px;
+  margin-top: -6px;
+  font-size: 11px;
+  color: var(--bar-swap);
+}
+
+.hint {
+  margin: -4px 0 0;
+  font-size: 11px;
+  color: var(--muted);
 }
 
 .controls {

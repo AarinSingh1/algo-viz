@@ -55,6 +55,15 @@
         </div>
 
         <label class="field">
+          Custom array
+          <div class="input-row">
+            <input id="array-input" type="text" placeholder="e.g. 5, 3, 8, 1, 9" autocomplete="off">
+            <button id="btn-apply-array" type="button">Use</button>
+          </div>
+        </label>
+        <span id="array-input-error" class="input-error"></span>
+
+        <label class="field">
           Speed
           <input id="speed" type="range" min="1" max="10" value="5" step="1">
         </label>
@@ -93,6 +102,8 @@
           <button id="grid-btn-step">Step</button>
           <button id="grid-btn-maze">New Maze</button>
         </div>
+
+        <p class="hint">Click or drag on the grid to draw or erase walls.</p>
 
         <label class="field">
           Speed

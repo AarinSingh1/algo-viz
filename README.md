@@ -13,7 +13,7 @@ for a week.
 - [x] **Day 2** — Pathfinding on a grid: BFS, DFS, Dijkstra, A*.
 - [x] **Day 3** — Race mode: two algorithms side by side on the same input.
 - [x] **Day 4** — Manual stepping + step/comparison counters.
-- [ ] **Day 5** — Custom input: type your own array, draw your own maze.
+- [x] **Day 5** — Custom input: type your own array, draw your own maze.
 - [ ] **Day 6** — Complexity overlay: live counts vs Big-O reference curves.
 - [ ] **Day 7** — Home dashboard: every algorithm, one gallery view.
 
@@ -50,3 +50,11 @@ Just open `index.html` in a browser. Everything is plain HTML/CSS/JS.
   clock uses, so nothing about step handling is duplicated per mode. A
   running step counter (separate from comparisons/swaps/visited) shows
   exactly how many discrete steps have elapsed.
+- Custom input (Day 5) sits alongside the random generators instead of
+  replacing them. In Sorting mode, a text field takes a comma-separated
+  list of numbers, skips anything that isn't a positive number, and shows
+  an inline message rather than crashing if the input can't be used; the
+  bar scale adapts to fit whatever values are typed in. In Pathfinding
+  mode, clicking or dragging across the grid toggles walls on and off to
+  hand-paint a maze, on top of whatever the random layout left behind.
+  New Array / New Maze still work as one-click random resets.
