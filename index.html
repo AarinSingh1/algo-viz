@@ -84,6 +84,18 @@
           <span class="stat-label">Status</span>
           <span id="stat-status" class="stat-value">Idle</span>
         </div>
+
+        <div class="complexity-panel">
+          <h3 class="complexity-heading">Complexity overlay</h3>
+          <canvas id="complexity-canvas" class="complexity-canvas" width="248" height="120"></canvas>
+          <div class="complexity-legend">
+            <span class="legend-item"><span class="legend-swatch legend-expected"></span>Expected class</span>
+            <span class="legend-item"><span class="legend-swatch legend-n"></span>O(n)</span>
+            <span class="legend-item"><span class="legend-swatch legend-nlogn"></span>O(n log n)</span>
+            <span class="legend-item"><span class="legend-swatch legend-n2"></span>O(n²)</span>
+          </div>
+          <p id="complexity-label" class="complexity-label"></p>
+        </div>
       </div>
 
       <div id="panel-pathfinding" class="mode-panel hidden">
@@ -125,6 +137,18 @@
         <div class="stat-row">
           <span class="stat-label">Status</span>
           <span id="stat-gridstatus" class="stat-value">Idle</span>
+        </div>
+
+        <div class="complexity-panel">
+          <h3 class="complexity-heading">Complexity overlay</h3>
+          <canvas id="grid-complexity-canvas" class="complexity-canvas" width="248" height="120"></canvas>
+          <div class="complexity-legend">
+            <span class="legend-item"><span class="legend-swatch legend-expected"></span>Expected class</span>
+            <span class="legend-item"><span class="legend-swatch legend-n"></span>O(n)</span>
+            <span class="legend-item"><span class="legend-swatch legend-nlogn"></span>O(n log n)</span>
+            <span class="legend-item"><span class="legend-swatch legend-n2"></span>O(n²)</span>
+          </div>
+          <p id="grid-complexity-label" class="complexity-label"></p>
         </div>
       </div>
 

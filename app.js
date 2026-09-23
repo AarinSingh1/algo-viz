@@ -27,6 +27,9 @@ const comparesEl = document.getElementById("stat-compares");
 const swapsEl = document.getElementById("stat-swaps");
 const stepsEl = document.getElementById("stat-steps");
 const statusEl = document.getElementById("stat-status");
+const complexityCanvas = document.getElementById("complexity-canvas");
+const complexityCtx = complexityCanvas.getContext("2d");
+const complexityLabelEl = document.getElementById("complexity-label");
 
 const ARRAY_SIZE = 70;
 const MAX_VALUE = 400;
@@ -48,6 +51,9 @@ let compareSet = new Set();
 let swapSet = new Set();
 let sortedSet = new Set();
 
+// Live (steps, comparisons) trace for the Day 6 complexity overlay.
+let sortComplexityHistory = [];
+
 function randomArray(n) {
   return Array.from({ length: n }, () => 10 + Math.floor(Math.random() * (MAX_VALUE - 10)));
 }
@@ -67,6 +73,8 @@ function resetRun() {
   statusEl.textContent = "Idle";
   startBtn.textContent = "Start";
   algoSelect.disabled = false;
+  sortComplexityHistory = [];
+  drawComplexityChart(complexityCanvas, complexityCtx, sortComplexityHistory, arr.length, SORT_COMPLEXITY_INFO[algoSelect.value].expected);
 }
 
 // Creates a fresh generator and resets per-run counters. Shared by Start
@@ -82,6 +90,8 @@ function startSortGen() {
   swapsEl.textContent = "0";
   stepsEl.textContent = "0";
   algoSelect.disabled = true;
+  sortComplexityHistory = [];
+  updateComplexityLabel();
 }
 
 // Pulls exactly one step off the sorting generator and applies it. This is
@@ -98,6 +108,8 @@ function advanceSortStep() {
   sortSteps++;
   stepsEl.textContent = sortSteps;
   applyStep(value);
+  sortComplexityHistory.push({ x: sortSteps, y: comparisons });
+  drawComplexityChart(complexityCanvas, complexityCtx, sortComplexityHistory, arr.length, SORT_COMPLEXITY_INFO[algoSelect.value].expected);
   return false;
 }
 
@@ -236,6 +248,16 @@ arrayInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") applyCustomArray();
 });
 
+function updateComplexityLabel() {
+  const info = SORT_COMPLEXITY_INFO[algoSelect.value];
+  complexityLabelEl.textContent = `${info.name}: ${info.note}`;
+}
+
+algoSelect.addEventListener("change", () => {
+  updateComplexityLabel();
+  drawComplexityChart(complexityCanvas, complexityCtx, sortComplexityHistory, arr.length, SORT_COMPLEXITY_INFO[algoSelect.value].expected);
+});
+
 function renderRoadmap() {
   const list = document.getElementById("roadmap-list");
   list.innerHTML = "";
@@ -275,6 +297,9 @@ const visitedEl = document.getElementById("stat-visited");
 const pathLenEl = document.getElementById("stat-pathlen");
 const gridStepsEl = document.getElementById("stat-gridsteps");
 const gridStatusEl = document.getElementById("stat-gridstatus");
+const gridComplexityCanvas = document.getElementById("grid-complexity-canvas");
+const gridComplexityCtx = gridComplexityCanvas.getContext("2d");
+const gridComplexityLabelEl = document.getElementById("grid-complexity-label");
 
 let wallSet = new Set();
 let pathGen = null;
@@ -287,6 +312,9 @@ let gridSteps = 0;
 let frontierSet = new Set();
 let visitedSet = new Set();
 let pathSet = new Set();
+
+// Live (steps, visited) trace for the Day 6 complexity overlay.
+let gridComplexityHistory = [];
 
 function randomWalls(density) {
   const walls = new Set();
@@ -341,6 +369,8 @@ function resetGridRun() {
   gridStatusEl.textContent = "Idle";
   gridStartBtn.textContent = "Start";
   gridAlgoSelect.disabled = false;
+  gridComplexityHistory = [];
+  drawComplexityChart(gridComplexityCanvas, gridComplexityCtx, gridComplexityHistory, GRID_COLS * GRID_ROWS, PATH_COMPLEXITY_INFO[gridAlgoSelect.value].expected);
 }
 
 // Mirrors startSortGen(): creates a fresh grid generator and resets
@@ -357,6 +387,8 @@ function startPathGen() {
   pathLenEl.textContent = "0";
   gridStepsEl.textContent = "0";
   gridAlgoSelect.disabled = true;
+  gridComplexityHistory = [];
+  updateGridComplexityLabel();
 }
 
 // Mirrors advanceSortStep(): the single code path both auto-play and the
@@ -371,6 +403,8 @@ function advancePathStep() {
   gridSteps++;
   gridStepsEl.textContent = gridSteps;
   applyGridStep(value);
+  gridComplexityHistory.push({ x: gridSteps, y: visitedCount });
+  drawComplexityChart(gridComplexityCanvas, gridComplexityCtx, gridComplexityHistory, GRID_COLS * GRID_ROWS, PATH_COMPLEXITY_INFO[gridAlgoSelect.value].expected);
   return false;
 }
 
@@ -496,6 +530,93 @@ window.addEventListener("mousemove", (e) => {
 window.addEventListener("mouseup", () => {
   isPaintingWalls = false;
 });
+
+function updateGridComplexityLabel() {
+  const info = PATH_COMPLEXITY_INFO[gridAlgoSelect.value];
+  gridComplexityLabelEl.textContent = `${info.name}: ${info.note}`;
+}
+
+gridAlgoSelect.addEventListener("change", () => {
+  updateGridComplexityLabel();
+  drawComplexityChart(gridComplexityCanvas, gridComplexityCtx, gridComplexityHistory, GRID_COLS * GRID_ROWS, PATH_COMPLEXITY_INFO[gridAlgoSelect.value].expected);
+});
+
+// --- Day 6: Complexity overlay ------------------------------------------
+// A small live chart per mode (sorting, pathfinding) that plots the run's
+// own (steps, count) trace against O(n)/O(n log n)/O(n^2) reference curves.
+// The curves share one scale factor `k`, chosen so the algorithm's own
+// expected class passes through the run's current point — so if the trace
+// hugs that curve across the whole chart (not just at the anchor), that's
+// the visual confirmation the run is behaving like its expected class.
+// Fed straight from the existing per-step counters (advanceSortStep /
+// advancePathStep) rather than a separate timer.
+const REF_CURVES = {
+  n: (x) => x,
+  nlogn: (x) => x * Math.log2(x + 1),
+  n2: (x) => x * x,
+};
+
+const SORT_COMPLEXITY_INFO = {
+  bubble: { name: "Bubble Sort", note: "avg/worst O(n²), best O(n)", expected: "n2" },
+  selection: { name: "Selection Sort", note: "avg/worst/best O(n²)", expected: "n2" },
+  insertion: { name: "Insertion Sort", note: "avg/worst O(n²), best O(n)", expected: "n2" },
+  merge: { name: "Merge Sort", note: "avg/worst/best O(n log n)", expected: "nlogn" },
+  quick: { name: "Quick Sort", note: "avg O(n log n), worst O(n²)", expected: "nlogn" },
+};
+
+const PATH_COMPLEXITY_INFO = {
+  bfs: { name: "Breadth-First Search", note: "O(V + E)", expected: "n" },
+  dfs: { name: "Depth-First Search", note: "O(V + E)", expected: "n" },
+  dijkstra: { name: "Dijkstra's Algorithm", note: "O((V+E) log V)", expected: "nlogn" },
+  astar: { name: "A* Search", note: "O(E), heuristic-dependent", expected: "n" },
+};
+
+function drawComplexityChart(canvas, cctx, history, n, expectedClass) {
+  const w = canvas.width, h = canvas.height;
+  cctx.clearRect(0, 0, w, h);
+
+  const last = history[history.length - 1];
+  const anchorX = Math.max(last ? last.x : 0, 1);
+  const anchorY = Math.max(last ? last.y : 0, 1);
+  const k = anchorY / Math.max(REF_CURVES[expectedClass](anchorX), 1e-6);
+  const xMax = Math.max(n, anchorX, 1);
+  const yMax = anchorY * 1.3;
+
+  const pad = 6;
+  const plotW = w - pad * 2;
+  const plotH = h - pad * 2;
+  const sx = (x) => pad + (x / xMax) * plotW;
+  const sy = (y) => pad + plotH - (Math.min(y, yMax) / yMax) * plotH;
+
+  function strokeCurve(fn, color, lineWidth) {
+    cctx.beginPath();
+    cctx.strokeStyle = color;
+    cctx.lineWidth = lineWidth;
+    const steps = 60;
+    for (let i = 0; i <= steps; i++) {
+      const x = (i / steps) * xMax;
+      const px = sx(x), py = sy(k * fn(x));
+      if (i === 0) cctx.moveTo(px, py); else cctx.lineTo(px, py);
+    }
+    cctx.stroke();
+  }
+
+  strokeCurve(REF_CURVES.n, getCss("--muted"), 1.25);
+  strokeCurve(REF_CURVES.nlogn, getCss("--bar-compare"), 1.25);
+  strokeCurve(REF_CURVES.n2, getCss("--bar-swap"), 1.25);
+  strokeCurve(REF_CURVES[expectedClass], getCss("--accent"), 2.5);
+
+  if (history.length > 1) {
+    cctx.beginPath();
+    cctx.strokeStyle = getCss("--text");
+    cctx.lineWidth = 2;
+    history.forEach((p, i) => {
+      const px = sx(p.x), py = sy(p.y);
+      if (i === 0) cctx.moveTo(px, py); else cctx.lineTo(px, py);
+    });
+    cctx.stroke();
+  }
+}
 
 // --- Day 3: Race mode -------------------------------------------------
 // Runs two ALGORITHMS generators side by side on identical starting
@@ -827,4 +948,8 @@ raceNewArray();
 draw();
 drawGrid();
 drawRace();
+updateComplexityLabel();
+drawComplexityChart(complexityCanvas, complexityCtx, sortComplexityHistory, arr.length, SORT_COMPLEXITY_INFO[algoSelect.value].expected);
+updateGridComplexityLabel();
+drawComplexityChart(gridComplexityCanvas, gridComplexityCtx, gridComplexityHistory, GRID_COLS * GRID_ROWS, PATH_COMPLEXITY_INFO[gridAlgoSelect.value].expected);
 requestAnimationFrame(frame);

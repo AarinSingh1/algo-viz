@@ -14,7 +14,7 @@ for a week.
 - [x] **Day 3** — Race mode: two algorithms side by side on the same input.
 - [x] **Day 4** — Manual stepping + step/comparison counters.
 - [x] **Day 5** — Custom input: type your own array, draw your own maze.
-- [ ] **Day 6** — Complexity overlay: live counts vs Big-O reference curves.
+- [x] **Day 6** — Complexity overlay: live counts vs Big-O reference curves.
 - [ ] **Day 7** — Home dashboard: every algorithm, one gallery view.
 
 Progress is also tracked in [`roadmap.js`](roadmap.js), which drives the
@@ -58,3 +58,12 @@ Just open `index.html` in a browser. Everything is plain HTML/CSS/JS.
   mode, clicking or dragging across the grid toggles walls on and off to
   hand-paint a maze, on top of whatever the random layout left behind.
   New Array / New Maze still work as one-click random resets.
+- The complexity overlay (Day 6) adds a small chart to the Sorting and
+  Pathfinding panels that plots the live (steps, comparisons/visited)
+  trace against O(n), O(n log n), and O(n²) reference curves, scaled so
+  the algorithm's own expected class lines up with the run's current
+  point — letting you see whether the live trace actually hugs that curve
+  or bends toward another class. It's fed by the same `advance*Step()`
+  functions the auto-play clock and Step button already call, and each
+  panel shows a short static label (e.g. "Quick Sort: avg O(n log n),
+  worst O(n²)") naming the algorithm's theoretical complexity.
