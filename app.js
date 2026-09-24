@@ -860,29 +860,96 @@ raceAlgoRightSelect.addEventListener("change", () => {
   raceLabelRightEl.textContent = raceAlgoRightSelect.selectedOptions[0].textContent;
 });
 
+// --- Day 7: Home dashboard -----------------------------------------------
+// A landing view listing every algorithm built this week (both families)
+// as a clickable card. Picking one switches to the right mode, selects
+// that algorithm, and resets the run so it starts from a clean state —
+// purely additive on top of the existing per-mode panels/canvases.
+
+const HOME_CARDS = {
+  sorting: [
+    { key: "bubble", name: "Bubble Sort", desc: "Repeatedly swaps adjacent out-of-order pairs until the array settles." },
+    { key: "selection", name: "Selection Sort", desc: "Finds the smallest remaining value and moves it into place each pass." },
+    { key: "insertion", name: "Insertion Sort", desc: "Grows a sorted prefix by inserting each new value where it belongs." },
+    { key: "merge", name: "Merge Sort", desc: "Splits the array in half recursively, then merges the sorted halves back together." },
+    { key: "quick", name: "Quick Sort", desc: "Partitions around a pivot and recursively sorts each side." },
+  ],
+  pathfinding: [
+    { key: "bfs", name: "Breadth-First Search", desc: "Explores the grid ring by ring, guaranteeing the shortest path in steps." },
+    { key: "dfs", name: "Depth-First Search", desc: "Dives down one path as far as it can before backtracking." },
+    { key: "dijkstra", name: "Dijkstra's Algorithm", desc: "Always expands the cheapest known path first, guaranteeing a shortest route." },
+    { key: "astar", name: "A* Search", desc: "Like Dijkstra, but steered by a heuristic toward the goal for fewer visits." },
+  ],
+};
+
+function makeHomeCard(family, card) {
+  const el = document.createElement("button");
+  el.type = "button";
+  el.className = "home-card";
+  const nameEl = document.createElement("span");
+  nameEl.className = "home-card-name";
+  nameEl.textContent = card.name;
+  const descEl = document.createElement("span");
+  descEl.className = "home-card-desc";
+  descEl.textContent = card.desc;
+  el.appendChild(nameEl);
+  el.appendChild(descEl);
+  el.addEventListener("click", () => launchFromHome(family, card.key));
+  return el;
+}
+
+function renderHome() {
+  const sortingGrid = document.getElementById("home-grid-sorting");
+  const pathGrid = document.getElementById("home-grid-pathfinding");
+  for (const card of HOME_CARDS.sorting) sortingGrid.appendChild(makeHomeCard("sorting", card));
+  for (const card of HOME_CARDS.pathfinding) pathGrid.appendChild(makeHomeCard("pathfinding", card));
+}
+
+function launchFromHome(family, algoKey) {
+  if (family === "sorting") {
+    resetRun();
+    algoSelect.value = algoKey;
+    updateComplexityLabel();
+    drawComplexityChart(complexityCanvas, complexityCtx, sortComplexityHistory, arr.length, SORT_COMPLEXITY_INFO[algoSelect.value].expected);
+    setMode("sorting");
+    draw();
+  } else {
+    resetGridRun();
+    gridAlgoSelect.value = algoKey;
+    updateGridComplexityLabel();
+    drawComplexityChart(gridComplexityCanvas, gridComplexityCtx, gridComplexityHistory, GRID_COLS * GRID_ROWS, PATH_COMPLEXITY_INFO[gridAlgoSelect.value].expected);
+    setMode("pathfinding");
+    drawGrid();
+  }
+}
+
 // --- Mode switching ----------------------------------------------------
 
-let mode = "sorting";
+let mode = "home";
 const tabButtons = document.querySelectorAll(".tab-btn");
+const homeWrap = document.getElementById("home-wrap");
 const stageWrap = document.getElementById("stage-wrap");
 const sortingPanel = document.getElementById("panel-sorting");
 const pathfindingPanel = document.getElementById("panel-pathfinding");
 const racePanel = document.getElementById("panel-race");
 const raceStageWrap = document.getElementById("race-stage-wrap");
+const homeButtons = document.querySelectorAll("[data-home]");
 
 function setMode(newMode) {
   mode = newMode;
   tabButtons.forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
+  homeWrap.classList.toggle("hidden", mode !== "home");
   sortingPanel.classList.toggle("hidden", mode !== "sorting");
   pathfindingPanel.classList.toggle("hidden", mode !== "pathfinding");
   racePanel.classList.toggle("hidden", mode !== "race");
-  stageWrap.classList.toggle("hidden", mode === "race");
+  stageWrap.classList.toggle("hidden", mode === "race" || mode === "home");
   canvas.classList.toggle("hidden", mode !== "sorting");
   gridCanvas.classList.toggle("hidden", mode !== "pathfinding");
   raceStageWrap.classList.toggle("hidden", mode !== "race");
 }
 
 tabButtons.forEach((btn) => btn.addEventListener("click", () => setMode(btn.dataset.mode)));
+homeButtons.forEach((btn) => btn.addEventListener("click", () => setMode("home")));
 
 // --- Combined driver loop ------------------------------------------------
 // Dispatches to whichever mode is active, so both the Day 1 sorting loop
@@ -921,7 +988,7 @@ function frame(ts) {
       lastTime = ts;
     }
     draw();
-  } else {
+  } else if (mode === "pathfinding") {
     if (pathRunning && pathGen) {
       if (!gridLastTime) gridLastTime = ts;
       gridAcc += ts - gridLastTime;
@@ -938,11 +1005,13 @@ function frame(ts) {
     }
     drawGrid();
   }
+  // mode === "home": nothing to step or paint, canvases are hidden.
   requestAnimationFrame(frame);
 }
 
 arr = randomArray(ARRAY_SIZE);
 renderRoadmap();
+renderHome();
 generateMaze();
 raceNewArray();
 draw();
@@ -952,4 +1021,5 @@ updateComplexityLabel();
 drawComplexityChart(complexityCanvas, complexityCtx, sortComplexityHistory, arr.length, SORT_COMPLEXITY_INFO[algoSelect.value].expected);
 updateGridComplexityLabel();
 drawComplexityChart(gridComplexityCanvas, gridComplexityCtx, gridComplexityHistory, GRID_COLS * GRID_ROWS, PATH_COMPLEXITY_INFO[gridAlgoSelect.value].expected);
+setMode("home");
 requestAnimationFrame(frame);

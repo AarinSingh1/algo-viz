@@ -15,7 +15,7 @@ for a week.
 - [x] **Day 4** — Manual stepping + step/comparison counters.
 - [x] **Day 5** — Custom input: type your own array, draw your own maze.
 - [x] **Day 6** — Complexity overlay: live counts vs Big-O reference curves.
-- [ ] **Day 7** — Home dashboard: every algorithm, one gallery view.
+- [x] **Day 7** — Home dashboard: every algorithm, one gallery view.
 
 Progress is also tracked in [`roadmap.js`](roadmap.js), which drives the
 build-log panel shown in the app itself.
@@ -67,3 +67,9 @@ Just open `index.html` in a browser. Everything is plain HTML/CSS/JS.
   functions the auto-play clock and Step button already call, and each
   panel shows a short static label (e.g. "Quick Sort: avg O(n log n),
   worst O(n²)") naming the algorithm's theoretical complexity.
+- The Home dashboard (Day 7) is the landing view, shown first and reachable
+  from a "Home" tab or a "← Home" button in every mode's panel. It lists
+  every algorithm built this week — sorting and pathfinding alike — as a
+  card with its name and a one-line description; clicking a card resets
+  that mode's run, selects the algorithm, and switches straight into it,
+  so nothing about the Day 1-6 modes changes, it's just a new way in.

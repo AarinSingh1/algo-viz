@@ -7,5 +7,5 @@ const ROADMAP = [
   { day: 4, title: "Manual stepping + step/comparison counters", done: true },
   { day: 5, title: "Custom input: type your own array, draw your own maze", done: true },
   { day: 6, title: "Complexity overlay: live counts vs Big-O reference curves", done: true },
-  { day: 7, title: "Home dashboard: every algorithm, one gallery view", done: false },
+  { day: 7, title: "Home dashboard: every algorithm, one gallery view", done: true },
 ];
